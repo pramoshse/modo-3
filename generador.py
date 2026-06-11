@@ -943,19 +943,20 @@ def html_to_word_bytes(
     for row,col,lbl,fill,fc,stripe in energy_items:
         cell = en.cell(row,col)
         if stripe:
+            bg_s, sc_s, pos = stripe
             try:
                 from PIL import Image as _PIL, ImageDraw as _Draw
-                bg_s, sc_s, pos = stripe
                 img = _PIL.new("RGB",(120,30),tuple(int(bg_s[i:i+2],16) for i in (0,2,4)))
                 draw = _Draw.Draw(img)
                 sc_rgb = tuple(int(sc_s[i:i+2],16) for i in (0,2,4))
                 for x0p,x1p in pos:
                     draw.rectangle([int(120*x0p/100),0,int(120*x1p/100)-1,29],fill=sc_rgb)
                 buf = io.BytesIO(); img.save(buf,format="PNG"); buf.seek(0)
-                # simplified: just use solid color for stripe cells in Word
+                _docx_energy_stripe_cell(cell, lbl, fc, buf.getvalue(), TW/6, 0.65)
+            except:
                 _docx_write_cell(cell,lbl,bold=True,size=5.8,color=fc,fill=bg_s)
-            except: _docx_write_cell(cell,lbl,bold=True,size=5.8,color=fc,fill=fill)
-        else: _docx_write_cell(cell,lbl,bold=True,size=5.8,color=fc,fill=fill)
+        else:
+            _docx_write_cell(cell,lbl,bold=True,size=5.8,color=fc,fill=fill)
 
     # Leyenda candados
     lc = doc.add_table(rows=1,cols=1); _docx_apply_table_grid(lc,[TW])
@@ -1172,16 +1173,35 @@ def build_modo_3_excel_bytes(
         (17,20,"Oz: Ozono","0F172A","BAE6FD",None,None),(21,24,"GC: Gas Carbónico","111827","C7D2FE",None,None),
     ]
     from openpyxl.styles import Alignment,Border,Font,PatternFill,Side
+    from openpyxl.drawing.image import Image as _XLLeg
     side = Side(style="thin",color="111827"); brd = Border(left=side,right=side,top=side,bottom=side)
     for row_offset, items in enumerate([xl_en, xl_en2]):
         r = cur_row + row_offset
         ws.row_dimensions[r].height = 24
-        for cs,ce,lbl,fc,bg,_sc,_pos in items:
+        for cs,ce,lbl,fc,bg,sc_leg,pos_leg in items:
             ws.merge_cells(f"{gcl(cs)}{r}:{gcl(ce)}{r}")
             cell = ws.cell(row=r,column=cs); cell.value = lbl
-            cell.fill = PatternFill("solid",fgColor=bg); cell.font = Font(name="Bahnschrift",size=7,bold=True,color=fc)
+            cell.fill = PatternFill("solid",fgColor=bg)
+            cell.font = Font(name="Bahnschrift",size=7,bold=True,color=fc)
             cell.alignment = Alignment(horizontal="center",vertical="center",wrap_text=True)
             for c in range(cs,ce+1): ws.cell(row=r,column=c).border = brd
+            if sc_leg and pos_leg:
+                try:
+                    from PIL import Image as _PIL_L, ImageDraw as _Draw_L, ImageFont as _IFont_L
+                    W_L,H_L = 160,32
+                    img_l = _PIL_L.new("RGB",(W_L,H_L),tuple(int(bg[i:i+2],16) for i in (0,2,4)))
+                    draw_l = _Draw_L.Draw(img_l)
+                    sc_rgb_l = tuple(int(sc_leg[i:i+2],16) for i in (0,2,4))
+                    for x0p_l,x1p_l in pos_leg:
+                        draw_l.rectangle([int(W_L*x0p_l/100),0,int(W_L*x1p_l/100)-1,H_L-1],fill=sc_rgb_l)
+                    fc_rgb_l = tuple(int(fc[i:i+2],16) for i in (0,2,4))
+                    try: fnt_l = _IFont_L.truetype("arial.ttf",8)
+                    except: fnt_l = _IFont_L.load_default()
+                    bb_l = draw_l.textbbox((0,0),lbl,font=fnt_l)
+                    draw_l.text(((W_L-(bb_l[2]-bb_l[0]))/2,(H_L-(bb_l[3]-bb_l[1]))/2-bb_l[1]),lbl,fill=fc_rgb_l,font=fnt_l)
+                    buf_l = io.BytesIO(); img_l.save(buf_l,format="PNG"); buf_l.seek(0)
+                    xl_l = _XLLeg(buf_l); xl_l.anchor = f"{gcl(cs)}{r}"; ws.add_image(xl_l)
+                except: pass
     cur_row += 2
 
     _xlsx_mw(ws,f"A{cur_row}:X{cur_row}","Clasificación de Candados según sector y función",fill=MODO3_COLOR_HEX,font_color=MODO3_FONT_HEX,bold=True,size=8); cur_row+=1
