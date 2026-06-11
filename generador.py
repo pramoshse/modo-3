@@ -40,26 +40,23 @@ MODO3_COLOR_HEX = "FF560E"
 MODO3_FONT_HEX  = "FFFFFF"
 
 # Colores de energías para la tabla de bloqueos
-ENERGIA_COLORS: Dict[str, Tuple[str, str]] = {
-    "Eléctrica":         ("000000", "FFFFFF"),
-    "Neumática":         ("0284C7", "FFFFFF"),
-    "Térmica":           ("DC2626", "FFFFFF"),
-    "Hidráulica":        ("7C3AED", "FFFFFF"),
-    "Potencial":         ("FFF200", "0F172A"),
-    "Química":           ("FFF200", "0F172A"),
-    "Vapor":             ("F59E0B", "111827"),
-    "Agua":              ("16A34A", "FFFFFF"),
-    "Amoníaco":          ("D9D9D9", "0F172A"),
-    "Soda cáustica":     ("D9D9D9", "0F172A"),
-    "Soda Cáustica":     ("D9D9D9", "0F172A"),
-    "Ozono":             ("BAE6FD", "0F172A"),
-    "Gas Carbónico":     ("C7D2FE", "111827"),
-}
-
 def _energia_colors(nombre: str) -> Tuple[str, str]:
-    for key, val in ENERGIA_COLORS.items():
-        if key.lower() in nombre.lower():
-            return val
+    """Devuelve (bg_hex, font_hex) para una energía. Matching robusto por palabra clave."""
+    n = nombre.lower().strip()
+    if "eléctrica" in n or "electrica" in n:  return ("000000", "FFFFFF")
+    if "neumática" in n or "neumatica" in n:   return ("0284C7", "FFFFFF")
+    if "térmica" in n   or "termica" in n:     return ("DC2626", "FFFFFF")
+    if "hidráulica" in n or "hidraulica" in n: return ("7C3AED", "FFFFFF")
+    # Amoníaco y Soda antes que Química/Potencial para evitar falsos positivos
+    if "amon" in n:                            return ("D9D9D9", "0F172A")
+    if "soda" in n or "cáustica" in n or "caustica" in n: return ("D9D9D9", "0F172A")
+    if "potencial" in n:                       return ("FFF200", "0F172A")
+    if "química" in n or "quimica" in n:       return ("FFF200", "0F172A")
+    if "vapor" in n:                           return ("F59E0B", "111827")
+    if "agua" in n:                            return ("16A34A", "FFFFFF")
+    if "ozono" in n:                           return ("BAE6FD", "0F172A")
+    if "gas" in n and "carbónico" in n:        return ("C7D2FE", "111827")
+    if "gas" in n and "carbonico" in n:        return ("C7D2FE", "111827")
     return ("E5E7EB", "0F172A")
 
 # ============================================================
@@ -272,49 +269,36 @@ def energias_to_lockpoints(energias: Dict[str, str]) -> List[Dict[str, str]]:
 # TEXTOS ACCIÓN / VERIFICACIÓN MODO 3
 # ============================================================
 
-_ACCION_MODO3 = [
-    "1. Notificar al personal afectado que el equipo será bloqueado y señalizar el área de intervención.",
-    "2. Identificar todas las fuentes de energía peligrosa del equipo según la evaluación de riesgos.",
-    "3. Detener el equipo mediante el control normal de PARO DE OPERACIÓN.",
-    "4. Aislar cada fuente de energía accionando el dispositivo de aislamiento correspondiente (disyuntor, válvula, llave de paso, etc.).",
-    "5. Aplicar el dispositivo de bloqueo (candado, grapa, cadena) en cada punto de aislamiento.",
-    "6. Cada trabajador involucrado debe colocar su propio candado personal en cada punto de bloqueo.",
-    "7. Cada trabajador conserva la posesión exclusiva de su llave durante toda la intervención.",
-    "8. Disipar, purgar o descargar todas las energías residuales o almacenadas: presión neumática, hidráulica, vapor, resortes, partes elevadas, energía química, térmica, etc.",
-    "9. Verificar la ausencia de energía intentando el arranque desde el panel de operación antes de ingresar.",
-    "10. Colocar la señalización de bloqueo (tarjeta LOTO / DANGER – DO NOT OPERATE) en cada punto bloqueado.",
-    "11. Confirmar que el equipo no responde a ningún comando de arranque ni puede ser energizado.",
-    "12. Realizar únicamente la tarea autorizada dentro de la zona bloqueada.",
-    "13. Mantener comunicación activa con todas las personas involucradas en la intervención.",
-    "14. Al finalizar, retirar herramientas, piezas y residuos del interior del equipo.",
-    "15. Confirmar que todo el personal se haya retirado del equipo y la zona de riesgo.",
-    "16. Cada trabajador retira su propio candado y dispositivo de bloqueo.",
-    "17. Restablecer los dispositivos de aislamiento en el orden correcto según el procedimiento del equipo.",
-    "18. Notificar al personal afectado que el equipo será reactivado antes de energizar.",
-    "19. Energizar y confirmar que el equipo opera con normalidad.",
+# ── Secciones del procedimiento Modo 3 / LOTO ──────────────────────────
+
+_SECCION_A = [
+    "1. Apagar la máquina.",
+    "2. Aislar las fuentes de energía.",
+    "3. Liberar cualquier energía almacenada (presión residual en equipo y cañería).",
+    "4. Colocar dispositivos de aseguramiento y señalización (candado, tarjeta bloqueo, etc.).",
+    "5. En caso de realizar trabajos especiales, como el mantenimiento de los cabezales de la máquina, es necesario seleccionar la velocidad de la máquina en la posición de marcha intermitente utilizando el selector en el tablero de comando. Luego, pulsar el botón de marcha para iniciar el movimiento de la máquina, paso a paso. Si no se llevan a cabo estos trabajos, se deberán aplicar los pasos N° 1, N° 2, N° 3 y N° 4.",
 ]
 
-_VERIFICACION_MODO3 = [
-    "1. Verificar que todas las fuentes de energía hayan sido identificadas en la evaluación de riesgos del equipo.",
-    "2. Verificar que exista un punto de aislamiento para cada fuente de energía identificada.",
-    "3. Verificar que cada punto de aislamiento haya sido accionado y esté en posición segura.",
-    "4. Verificar que cada punto de bloqueo tenga instalado al menos un candado por trabajador involucrado.",
-    "5. Verificar que ningún trabajador dependa del candado de otro para su protección personal.",
-    "6. Verificar que todas las energías residuales hayan sido disipadas, purgadas o descargadas.",
-    "7. Verificar la ausencia de tensión eléctrica con instrumento de medición adecuado (tester, multímetro).",
-    "8. Verificar la ausencia de presión neumática e hidráulica con manómetros o apertura controlada de purgas.",
-    "9. Verificar la ausencia de temperatura peligrosa antes de ingresar a zonas térmicas.",
-    "10. Verificar que el equipo no responda a ningún intento de arranque desde el panel.",
-    "11. Verificar que la señalización LOTO esté colocada, visible e identificada en cada punto bloqueado.",
-    "12. Verificar que los candados y dispositivos sean personales, únicos e intransferibles.",
-    "13. Verificar que no existan bypass, puentes, anulaciones ni modificaciones a los dispositivos de bloqueo.",
-    "14. Verificar que la tarea realizada sea la autorizada y no requiera acciones adicionales no previstas.",
-    "15. Verificar que todas las herramientas, piezas y residuos hayan sido retirados antes del restablecimiento.",
-    "16. Verificar que todo el personal haya salido del equipo antes de retirar cualquier candado.",
-    "17. Verificar que cada trabajador retire únicamente su propio candado.",
-    "18. Verificar que los dispositivos de aislamiento sean restablecidos en el orden correcto.",
-    "19. Verificar que el equipo opere con normalidad luego del restablecimiento y que no queden condiciones inseguras.",
+_SECCION_B = [
+    "1. Hacer un llamado de 'despejar', verificando visualmente que todo el personal haya despejado la máquina.",
+    "2. Arrancar el equipo y verificar que los mecanismos no funcionen.",
 ]
+
+_SECCION_C = [
+    "1. Inspeccionar el área (herramientas, protecciones colocadas, etc.).",
+    "2. Retirar los seguros de aislamiento.",
+    "3. Volver a energizar el equipo. Hacer un llamado de despejar y verificar visualmente que no se encuentren objetos ni personal cerca del área de trabajo de dicha máquina.",
+    "4. De producirse algún desperfecto, avisar al personal de mantenimiento o al contratista afectado en la tarea de mantenimiento.",
+    "5. Arrancar la máquina y controlar su normal funcionamiento.",
+]
+
+_TITULO_A = "A- Procedimiento de Parada"
+_DESC_A   = "Listar en orden los pasos necesarios para desenergizar el equipo y llegar a un estado de energía cero:"
+_TITULO_B = "B- Procedimiento de Verificación"
+_DESC_B   = "Verificar que el equipo se encuentra en un estado de energía cero:"
+_TITULO_C = "C- Procedimiento de Arranque"
+_DESC_C   = "Revisar siempre el equipo y el área de operación antes de cualquier arranque:"
+
 
 # ============================================================
 # RENDER HTML
@@ -350,6 +334,10 @@ def _energia_stripe_style(nombre: str) -> str:
         return _STRIPE_STYLES["potencial"]
     bg, _ = _energia_colors(nombre)
     return f"background:#{bg};"
+
+def _is_stripe_energia(nombre: str) -> bool:
+    n = nombre.lower()
+    return "amon" in n or "soda" in n or "cáustica" in n or "caustica" in n or "potencial" in n
 
 def _lockpoints_table_html(points: List[Dict[str, str]]) -> str:
     """Genera la tabla Punto | Energía+Magnitud | Ubicación | Acción | Verificación | Dispositivo"""
@@ -411,9 +399,17 @@ def build_modo_3_html(
     if eval_riesgos_fecha:  eval_ref += f"  ·  Fecha: {_html_esc(eval_riesgos_fecha)}"
     if not eval_ref:        eval_ref = "—"
 
-    accion_html = "".join(f"<p>{_html_esc(l)}</p>" for l in _ACCION_MODO3)
-    verif_html  = "".join(f"<p>{_html_esc(l)}</p>" for l in _VERIFICACION_MODO3)
     lock_rows   = _lockpoints_table_html(lockpoints)
+    def _sec_html(titulo, desc, items):
+        pasos = "".join(f"<p style='margin:0 0 3px 0;font-size:8.2px;line-height:1.38;'>{_html_esc(s)}</p>" for s in items)
+        return (f"<div style='margin-bottom:6px;'>"
+                f"<div style='background:#3B3B3B;color:#FFFFFF;font-weight:900;font-size:8px;padding:3px 7px;'>{_html_esc(titulo)}</div>"
+                f"<div style='font-size:8px;color:#64748B;padding:2px 7px 3px;font-style:italic;'>{_html_esc(desc)}</div>"
+                f"<div style='padding:3px 7px;'>{pasos}</div>"
+                f"</div>")
+    secciones_html = (_sec_html(_TITULO_A, _DESC_A, _SECCION_A)
+                    + _sec_html(_TITULO_B, _DESC_B, _SECCION_B)
+                    + _sec_html(_TITULO_C, _DESC_C, _SECCION_C))
 
     C = MODO3_COLOR  # shorthand for f-strings
 
@@ -584,17 +580,8 @@ def build_modo_3_html(
   {lock_rows}
 </table>
 
-<!-- PROCEDIMIENTO: Acción y Verificación -->
-<table class="procedure-table">
-  <tr class="dark-head">
-    <th style="width:50%;">Acción</th>
-    <th style="width:50%;">Verificación</th>
-  </tr>
-  <tr>
-    <td class="procedure-note">{accion_html}</td>
-    <td class="procedure-note">{verif_html}</td>
-  </tr>
-</table>
+<!-- PROCEDIMIENTO: Secciones A/B/C -->
+<div style="border:1px solid #111827;background:#FFFFFF;padding:6px 0 4px 0;">{secciones_html}</div>
 
 <!-- LEYENDA ENERGÍAS -->
 <div class="legend-title">Clasificación de Energías Peligrosas</div>
@@ -926,12 +913,18 @@ def html_to_word_bytes(
         _docx_write_cell(lk.cell(ri,5),p.get("dispositivo",""),size=6.5,fill="FFFFFF",align="left",valign="top")
 
 
-    # Procedimiento Acción / Verificación
-    pr = doc.add_table(rows=2,cols=2); _docx_apply_table_grid(pr,[8.9,8.9])
-    _docx_write_cell(pr.cell(0,0),"Acción",bold=True,size=7.0,color="FFFFFF",fill="3B3B3B")
-    _docx_write_cell(pr.cell(0,1),"Verificación",bold=True,size=7.0,color="FFFFFF",fill="3B3B3B")
-    _docx_write_cell(pr.cell(1,0),"\n\n".join(_ACCION_MODO3),size=6.5,fill="FFFFFF",align="left",valign="top")
-    _docx_write_cell(pr.cell(1,1),"\n\n".join(_VERIFICACION_MODO3),size=6.5,fill="FFFFFF",align="left",valign="top")
+    # Procedimiento: Secciones A / B / C
+    for titulo_s, desc_s, items_s in [
+        (_TITULO_A, _DESC_A, _SECCION_A),
+        (_TITULO_B, _DESC_B, _SECCION_B),
+        (_TITULO_C, _DESC_C, _SECCION_C),
+    ]:
+        st_hdr = doc.add_table(rows=1,cols=1); _docx_apply_table_grid(st_hdr,[TW])
+        _docx_write_cell(st_hdr.cell(0,0), titulo_s, bold=True, size=7.5, color="FFFFFF", fill="3B3B3B", align="left")
+        st_desc = doc.add_table(rows=1,cols=1); _docx_apply_table_grid(st_desc,[TW])
+        _docx_write_cell(st_desc.cell(0,0), desc_s, bold=False, size=6.5, color="334155", fill="F8FAFC", align="left")
+        st_body = doc.add_table(rows=1,cols=1); _docx_apply_table_grid(st_body,[TW])
+        _docx_write_cell(st_body.cell(0,0), "\n".join(items_s), size=6.8, fill="FFFFFF", align="left", valign="top")
 
     # Leyenda energías
     le = doc.add_table(rows=1,cols=1); _docx_apply_table_grid(le,[TW])
@@ -1149,14 +1142,19 @@ def build_modo_3_excel_bytes(
         ws.row_dimensions[cur_row].height = 28
         cur_row += 1
 
-    # Procedimiento
-    _xlsx_mw(ws,f"A{cur_row}:L{cur_row}","Acción",fill="3B3B3B",font_color="FFFFFF",bold=True,size=7); 
-    _xlsx_mw(ws,f"M{cur_row}:X{cur_row}","Verificación",fill="3B3B3B",font_color="FFFFFF",bold=True,size=7); cur_row+=1
-    ar, vr = cur_row, cur_row
-    _xlsx_mw(ws,f"A{ar}:L{ar+11}","\n\n".join(_ACCION_MODO3),fill="FFFFFF",size=7.0,align="left")
-    _xlsx_mw(ws,f"M{vr}:X{vr+11}","\n\n".join(_VERIFICACION_MODO3),fill="FFFFFF",size=7.0,align="left")
-    for r in range(ar, ar+12): ws.row_dimensions[r].height = 22
-    cur_row = ar + 12
+    # Procedimiento: Secciones A / B / C
+    for titulo_s, desc_s, items_s in [
+        (_TITULO_A, _DESC_A, _SECCION_A),
+        (_TITULO_B, _DESC_B, _SECCION_B),
+        (_TITULO_C, _DESC_C, _SECCION_C),
+    ]:
+        _xlsx_mw(ws,f"A{cur_row}:X{cur_row}",titulo_s,fill="3B3B3B",font_color="FFFFFF",bold=True,size=7.5,align="left"); cur_row+=1
+        _xlsx_mw(ws,f"A{cur_row}:X{cur_row}",desc_s,fill="F8FAFC",font_color="334155",bold=False,size=6.5,align="left"); cur_row+=1
+        body_txt = "\n".join(items_s)
+        n_body = max(3, len(items_s))
+        _xlsx_mw(ws,f"A{cur_row}:X{cur_row+n_body-1}",body_txt,fill="FFFFFF",size=7.0,align="left")
+        for r in range(cur_row, cur_row+n_body): ws.row_dimensions[r].height = 22
+        cur_row += n_body
 
     # Leyendas
     _xlsx_mw(ws,f"A{cur_row}:X{cur_row}","Clasificación de Energías Peligrosas",fill=MODO3_COLOR_HEX,font_color=MODO3_FONT_HEX,bold=True,size=8); cur_row+=1
