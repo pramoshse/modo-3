@@ -332,25 +332,45 @@ def _tasks_html(tasks: List[str]) -> str:
         return f"<div class='task-inline'>{' - '.join(_html_esc(t) for t in tasks)}</div>"
     return "".join(f"<div class='task-line'>- {_html_esc(t)}</div>" for t in tasks)
 
+# Stripes CSS para energías con patrón rayado (HTML)
+_STRIPE_STYLES: Dict[str, str] = {
+    "amoniaco":  "background:linear-gradient(90deg,#D9D9D9 0% 15%,#F59E0B 15% 26%,#D9D9D9 26% 42%,#F59E0B 42% 53%,#D9D9D9 53% 68%,#F59E0B 68% 79%,#D9D9D9 79% 100%);",
+    "soda":      "background:linear-gradient(90deg,#D9D9D9 0% 25%,#F59E0B 25% 37%,#D9D9D9 37% 60%,#F59E0B 60% 72%,#D9D9D9 72% 100%);",
+    "potencial": "background:linear-gradient(90deg,#FFF200 0% 22%,#050505 22% 34%,#FFF200 34% 62%,#050505 62% 74%,#FFF200 74% 100%);",
+}
+
+def _energia_stripe_style(nombre: str) -> str:
+    """Devuelve el estilo CSS de fondo (sólido o rayado) para la celda de energía en HTML."""
+    n = nombre.lower()
+    if "amon" in n:
+        return _STRIPE_STYLES["amoniaco"]
+    if "soda" in n or "cáustica" in n or "caustica" in n:
+        return _STRIPE_STYLES["soda"]
+    if "potencial" in n:
+        return _STRIPE_STYLES["potencial"]
+    bg, _ = _energia_colors(nombre)
+    return f"background:#{bg};"
+
 def _lockpoints_table_html(points: List[Dict[str, str]]) -> str:
     """Genera la tabla Punto | Energía+Magnitud | Ubicación | Acción | Verificación | Dispositivo"""
     rows = ""
     for i, p in enumerate(points, 1):
-        bg, fc = _energia_colors(p.get("energia",""))
+        _, fc = _energia_colors(p.get("energia",""))
+        stripe_style = _energia_stripe_style(p.get("energia",""))
         energia_cell = (
-            f"<td style='background:#{bg};color:#{fc};font-weight:900;font-size:7.5px;"
+            f"<td style='{stripe_style}color:#{fc};font-weight:900;font-size:7.5px;"
             f"text-align:center;vertical-align:middle;padding:4px 5px;'>"
             f"{_html_esc(p.get('energia',''))}<br>"
             f"<span style='font-weight:700;font-size:7px;'>{_html_esc(p.get('magnitud',''))}</span></td>"
         )
         rows += (
             f"<tr>"
-            f"<td style='text-align:center;font-weight:900;font-size:13px;background:#FFF7ED;'>{i}</td>"
+            f"<td style='text-align:center;font-weight:900;font-size:13px;background:#FFFFFF;'>{i}</td>"
             f"{energia_cell}"
-            f"<td style='font-size:7.5px;vertical-align:top;padding:4px 5px;'>{_html_esc(p.get('ubicacion',''))}</td>"
-            f"<td style='font-size:7.5px;vertical-align:top;padding:4px 5px;'>{_html_esc(p.get('accion',''))}</td>"
-            f"<td style='font-size:7.5px;vertical-align:top;padding:4px 5px;'>{_html_esc(p.get('verificacion',''))}</td>"
-            f"<td style='font-size:7.5px;vertical-align:top;padding:4px 5px;'>{_html_esc(p.get('dispositivo',''))}</td>"
+            f"<td style='font-size:7.5px;vertical-align:top;padding:4px 5px;background:#FFFFFF;'>{_html_esc(p.get('ubicacion',''))}</td>"
+            f"<td style='font-size:7.5px;vertical-align:top;padding:4px 5px;background:#FFFFFF;'>{_html_esc(p.get('accion',''))}</td>"
+            f"<td style='font-size:7.5px;vertical-align:top;padding:4px 5px;background:#FFFFFF;'>{_html_esc(p.get('verificacion',''))}</td>"
+            f"<td style='font-size:7.5px;vertical-align:top;padding:4px 5px;background:#FFFFFF;'>{_html_esc(p.get('dispositivo',''))}</td>"
             f"</tr>"
         )
     return rows
@@ -433,7 +453,7 @@ def build_modo_3_html(
     .orange-header th {{ background:{C}; color:#FFFFFF; font-weight:900; text-align:center; font-size:9px; }}
     .orange-bar {{ background:{C}; color:#FFFFFF; font-weight:900; text-align:center; font-size:10px;
                    border-left:1px solid #111827; border-right:1px solid #111827; padding:4px 8px; }}
-    .block-zero {{ text-align:center; font-size:26px; font-weight:900; color:#000000; background:#FFF7ED; line-height:1; vertical-align:middle; }}
+    .block-zero {{ text-align:center; font-size:26px; font-weight:900; color:#000000; background:#FFFFFF; line-height:1; vertical-align:middle; }}
     .mode-box   {{ background:{C}; color:#FFFFFF; text-align:center; font-size:15px; font-weight:900; text-transform:uppercase; vertical-align:middle; }}
     .tasks-cell {{ min-height:36px; font-size:8.6px; background:#FFFFFF; padding:5px 8px; }}
     .task-line  {{ margin:0 0 4px 0; }}
@@ -441,7 +461,7 @@ def build_modo_3_html(
     /* Tabla de bloqueos */
     .lock-table th {{ background:{C}; color:#FFFFFF; font-weight:900; font-size:8px; text-align:center; padding:3px 4px; }}
     .lock-table td {{ font-size:7.8px; vertical-align:top; padding:4px 5px; }}
-    .lock-table tr:nth-child(even) td {{ background:#FFF7ED; }}
+    .lock-table tr td {{ background:#FFFFFF; }}
     .photo-area {{ height:210px; background:#FFFFFF; text-align:center; vertical-align:middle; padding:7px; }}
     .equipment-photo {{ max-width:100%; max-height:195px; object-fit:contain; border:1px solid #CBD5E1; background:#F8FAFC; padding:3px; }}
     .photo-placeholder {{ height:190px; display:flex; align-items:center; justify-content:center;
@@ -780,7 +800,7 @@ def html_to_word_bytes(
     tt = doc.add_table(rows=2,cols=3); _docx_apply_table_grid(tt,[2.0,2.8,13.0])
     for i,t in enumerate(["Puntos de\nBloqueo","Modo de\nIntervención","Listado de tareas aplicable al presente procedimiento"]):
         _docx_write_cell(tt.cell(0,i),t,bold=True,size=7.2,color=MODO3_FONT_HEX,fill=MODO3_COLOR_HEX)
-    _docx_write_cell(tt.cell(1,0),str(n_bloqueos),bold=True,size=22.0,fill="FFF7ED")
+    _docx_write_cell(tt.cell(1,0),str(n_bloqueos),bold=True,size=22.0,fill="FFFFFF")
     _docx_write_cell(tt.cell(1,1),"MODO 3\nLOTO",bold=True,size=11.0,color=MODO3_FONT_HEX,fill=MODO3_COLOR_HEX)
     _tareas = ctx.get("tareas") or []
     tasks_str = " - ".join(_tareas) if len(_tareas) > 13 else "\n".join(f"- {t}" for t in _tareas)
@@ -811,12 +831,100 @@ def html_to_word_bytes(
         _docx_write_cell(lk.cell(0,i),h,bold=True,size=6.5,color=MODO3_FONT_HEX,fill=MODO3_COLOR_HEX)
     for ri, p in enumerate(lockpoints, 1):
         bg, fc = _energia_colors(p.get("energia",""))
-        _docx_write_cell(lk.cell(ri,0),str(ri),bold=True,size=10.0,fill="FFF7ED")
-        _docx_write_cell(lk.cell(ri,1),f"{p.get('energia','')}\n{p.get('magnitud','')}",bold=True,size=6.5,color=fc,fill=bg)
+        _docx_write_cell(lk.cell(ri,0),str(ri),bold=True,size=10.0,fill="FFFFFF")
+        # Stripe PNG para Amoníaco, Soda Cáustica, Potencial
+        _WORD_STRIPE_SPECS = {
+            "amoniaco":  ("D9D9D9","F59E0B",[(15,26),(42,53),(68,79)]),
+            "soda":      ("D9D9D9","F59E0B",[(25,37),(60,72)]),
+            "potencial": ("FFF200","050505",[(22,34),(62,74)]),
+        }
+        def _wsk(nombre):
+            n = nombre.lower()
+            if "amon" in n: return "amoniaco"
+            if "soda" in n or "cáustica" in n or "caustica" in n: return "soda"
+            if "potencial" in n: return "potencial"
+            return None
+        sk = _wsk(p.get("energia",""))
+        if sk:
+            sp_bg, sp_sc, sp_pos = _WORD_STRIPE_SPECS[sk]
+            _placed = False
+            try:
+                from PIL import Image as _PIL2, ImageDraw as _Draw2
+                from lxml import etree as _etree2
+                from docx.oxml import OxmlElement as _OE2
+                from docx.oxml.ns import qn as _qn2
+                from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT as _VCA2
+                from docx.enum.text import WD_ALIGN_PARAGRAPH as _AP2
+                img2 = _PIL2.new("RGB",(120,40),tuple(int(sp_bg[i:i+2],16) for i in (0,2,4)))
+                draw2 = _Draw2.Draw(img2)
+                sc_rgb2 = tuple(int(sp_sc[i:i+2],16) for i in (0,2,4))
+                for x0p,x1p in sp_pos:
+                    draw2.rectangle([int(120*x0p/100),0,int(120*x1p/100)-1,39],fill=sc_rgb2)
+                buf2 = io.BytesIO(); img2.save(buf2,format="PNG"); buf2.seek(0)
+                e_cell = lk.cell(ri,1); e_cell.text = ""
+                tc_pr2 = e_cell._tc.get_or_add_tcPr()
+                tc_b2 = tc_pr2.first_child_found_in("w:tcBorders")
+                if tc_b2 is None:
+                    tc_b2 = _OE2("w:tcBorders"); tc_pr2.append(tc_b2)
+                for edge in ("top","left","bottom","right"):
+                    s2 = _OE2(f"w:{edge}")
+                    s2.set(_qn2("w:val"),"single"); s2.set(_qn2("w:sz"),"6")
+                    s2.set(_qn2("w:space"),"0"); s2.set(_qn2("w:color"),"111827")
+                    tc_b2.append(s2)
+                tc_m2 = tc_pr2.first_child_found_in("w:tcMar")
+                if tc_m2 is None:
+                    tc_m2 = _OE2("w:tcMar"); tc_pr2.append(tc_m2)
+                for m2 in ("top","start","bottom","end"):
+                    n2 = _OE2(f"w:{m2}"); n2.set(_qn2("w:w"),"0"); n2.set(_qn2("w:type"),"dxa")
+                    tc_m2.append(n2)
+                e_cell.vertical_alignment = _VCA2.CENTER
+                rId2, _ = e_cell.part.get_or_add_image(io.BytesIO(buf2.getvalue()))
+                cx2 = int(3.0*914400/2.54); cy2 = int(0.9*914400/2.54)
+                anc2 = (
+                    f'<w:drawing xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"'
+                    f' xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"'
+                    f' xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"'
+                    f' xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"'
+                    f' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+                    f'<wp:anchor behindDoc="1" distT="0" distB="0" distL="0" distR="0"'
+                    f' simplePos="0" locked="1" layoutInCell="1" allowOverlap="0" relativeHeight="1">'
+                    f'<wp:simplePos x="0" y="0"/>'
+                    f'<wp:positionH relativeFrom="column"><wp:posOffset>0</wp:posOffset></wp:positionH>'
+                    f'<wp:positionV relativeFrom="paragraph"><wp:posOffset>-82400</wp:posOffset></wp:positionV>'
+                    f'<wp:extent cx="{cx2}" cy="{cy2}"/>'
+                    f'<wp:effectExtent l="0" t="0" r="0" b="0"/>'
+                    f'<wp:wrapNone/><wp:docPr id="20" name="lkbg"/><wp:cNvGraphicFramePr/>'
+                    f'<a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">'
+                    f'<pic:pic><pic:nvPicPr><pic:cNvPr id="20" name="lkbg"/><pic:cNvPicPr/></pic:nvPicPr>'
+                    f'<pic:blipFill><a:blip r:embed="{rId2}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>'
+                    f'<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="{cx2}" cy="{cy2}"/></a:xfrm>'
+                    f'<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr>'
+                    f'</pic:pic></a:graphicData></a:graphic></wp:anchor></w:drawing>'
+                )
+                para2 = e_cell.paragraphs[0]; para2.alignment = _AP2.CENTER
+                para2.paragraph_format.space_before = 0; para2.paragraph_format.space_after = 0
+                dr2 = _etree2.fromstring(anc2.encode())
+                r2a = _OE2("w:r"); r2a.append(dr2); para2._p.append(r2a)
+                r2b = _OE2("w:r"); rPr2 = _OE2("w:rPr")
+                fc2 = fc.replace("#","").upper()
+                for tag2,attrs2 in [("w:b",{}),("w:rFonts",{_qn2("w:ascii"):"Bahnschrift",_qn2("w:hAnsi"):"Bahnschrift"}),("w:sz",{_qn2("w:val"):"13"}),("w:szCs",{_qn2("w:val"):"13"}),("w:color",{_qn2("w:val"):fc2})]:
+                    e2 = _OE2(tag2)
+                    for k2,v2 in attrs2.items(): e2.set(k2,v2)
+                    rPr2.append(e2)
+                r2b.append(rPr2)
+                t2 = _OE2("w:t"); t2.text = p.get('energia','') + "\n" + p.get('magnitud',''); r2b.append(t2)
+                para2._p.append(r2b)
+                _placed = True
+            except: pass
+            if not _placed:
+                _docx_write_cell(lk.cell(ri,1),p.get('energia','') + "\n" + p.get('magnitud',''),bold=True,size=6.5,color=fc,fill=sp_bg)
+        else:
+            _docx_write_cell(lk.cell(ri,1),p.get('energia','') + "\n" + p.get('magnitud',''),bold=True,size=6.5,color=fc,fill=bg)
         _docx_write_cell(lk.cell(ri,2),p.get("ubicacion",""),size=6.5,fill="FFFFFF",align="left",valign="top")
         _docx_write_cell(lk.cell(ri,3),p.get("accion",""),size=6.5,fill="FFFFFF",align="left",valign="top")
         _docx_write_cell(lk.cell(ri,4),p.get("verificacion",""),size=6.5,fill="FFFFFF",align="left",valign="top")
         _docx_write_cell(lk.cell(ri,5),p.get("dispositivo",""),size=6.5,fill="FFFFFF",align="left",valign="top")
+
 
     # Procedimiento Acción / Verificación
     pr = doc.add_table(rows=2,cols=2); _docx_apply_table_grid(pr,[8.9,8.9])
@@ -987,7 +1095,7 @@ def build_modo_3_excel_bytes(
     _xlsx_mw(ws,"A11:C11","Puntos de\nBloqueo",fill=MODO3_COLOR_HEX,font_color=MODO3_FONT_HEX,bold=True,size=7)
     _xlsx_mw(ws,"D11:F11","Modo de\nIntervención",fill=MODO3_COLOR_HEX,font_color=MODO3_FONT_HEX,bold=True,size=7)
     _xlsx_mw(ws,"G11:X11","Listado de tareas aplicable al presente procedimiento",fill=MODO3_COLOR_HEX,font_color=MODO3_FONT_HEX,bold=True,size=7)
-    _xlsx_mw(ws,"A12:C15",str(n_bloqueos),fill="FFF7ED",bold=True,size=22)
+    _xlsx_mw(ws,"A12:C15",str(n_bloqueos),fill="FFFFFF",bold=True,size=22)
     _xlsx_mw(ws,"D12:F15","MODO 3\nLOTO",fill=MODO3_COLOR_HEX,font_color=MODO3_FONT_HEX,bold=True,size=11)
     _tareas = ctx.get("tareas") or []
     tasks_str = " - ".join(_tareas) if len(_tareas) > 13 else "\n".join(f"- {t}" for t in _tareas)
@@ -1010,13 +1118,34 @@ def build_modo_3_excel_bytes(
 
     for i, p in enumerate(lockpoints, 1):
         bg, fc = _energia_colors(p.get("energia",""))
-        row_fill = "FFF7ED" if i % 2 == 0 else "FFFFFF"
-        _xlsx_mw(ws,f"A{cur_row}:B{cur_row}",str(i),fill="FFF7ED",font_color="0F172A",bold=True,size=12)
-        _xlsx_mw(ws,f"C{cur_row}:F{cur_row}",f"{p.get('energia','')}\n{p.get('magnitud','')}",fill=bg,font_color=fc,bold=True,size=7)
-        _xlsx_mw(ws,f"G{cur_row}:J{cur_row}",p.get("ubicacion",""),fill=row_fill,size=7,align="left")
-        _xlsx_mw(ws,f"K{cur_row}:N{cur_row}",p.get("accion",""),fill=row_fill,size=7,align="left")
-        _xlsx_mw(ws,f"O{cur_row}:R{cur_row}",p.get("verificacion",""),fill=row_fill,size=7,align="left")
-        _xlsx_mw(ws,f"S{cur_row}:X{cur_row}",p.get("dispositivo",""),fill=row_fill,size=7,align="left")
+        row_fill = "FFFFFF"
+        _XLSX_STRIPE = {"amoniaco":("D9D9D9","F59E0B",[(15,26),(42,53),(68,79)]),"soda":("D9D9D9","F59E0B",[(25,37),(60,72)]),"potencial":("FFF200","050505",[(22,34),(62,74)])}
+        def _xlsk(n): return "amoniaco" if "amon" in n.lower() else ("soda" if ("soda" in n.lower() or "caustica" in n.lower() or "cáustica" in n.lower()) else ("potencial" if "potencial" in n.lower() else None))
+        sk_xl = _xlsk(p.get("energia",""))
+        _xlsx_mw(ws,f"C{cur_row}:F{cur_row}",p.get('energia','') + "\n" + p.get('magnitud',''),fill=bg,font_color=fc,bold=True,size=7)
+        if sk_xl:
+            try:
+                sp_bg3,sp_sc3,sp_pos3 = _XLSX_STRIPE[sk_xl]
+                from PIL import Image as _PIL3,ImageDraw as _Draw3,ImageFont as _IFont3
+                from openpyxl.drawing.image import Image as _XLI3
+                W3,H3=160,36
+                img3=_PIL3.new("RGB",(W3,H3),tuple(int(sp_bg3[i:i+2],16) for i in (0,2,4)))
+                draw3=_Draw3.Draw(img3)
+                sc3=tuple(int(sp_sc3[i:i+2],16) for i in (0,2,4))
+                for x0p3,x1p3 in sp_pos3: draw3.rectangle([int(W3*x0p3/100),0,int(W3*x1p3/100)-1,H3-1],fill=sc3)
+                fc3=tuple(int(fc[i:i+2],16) for i in (0,2,4))
+                try: fnt3=_IFont3.truetype("arial.ttf",8)
+                except: fnt3=_IFont3.load_default()
+                lbl3=p.get("energia","")
+                bb3=draw3.textbbox((0,0),lbl3,font=fnt3)
+                draw3.text(((W3-(bb3[2]-bb3[0]))/2,(H3-(bb3[3]-bb3[1]))/2-bb3[1]),lbl3,fill=fc3,font=fnt3)
+                buf3=io.BytesIO(); img3.save(buf3,format="PNG"); buf3.seek(0)
+                xl3=_XLI3(buf3); xl3.anchor=f"C{cur_row}"; ws.add_image(xl3)
+            except: pass
+        _xlsx_mw(ws,f"G{cur_row}:J{cur_row}",p.get("ubicacion",""),fill="FFFFFF",size=7,align="left")
+        _xlsx_mw(ws,f"K{cur_row}:N{cur_row}",p.get("accion",""),fill="FFFFFF",size=7,align="left")
+        _xlsx_mw(ws,f"O{cur_row}:R{cur_row}",p.get("verificacion",""),fill="FFFFFF",size=7,align="left")
+        _xlsx_mw(ws,f"S{cur_row}:X{cur_row}",p.get("dispositivo",""),fill="FFFFFF",size=7,align="left")
         ws.row_dimensions[cur_row].height = 28
         cur_row += 1
 
