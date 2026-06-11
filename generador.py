@@ -706,6 +706,92 @@ def _docx_apply_table_grid(table, widths_cm=None):
             try: table.columns[idx].width = Cm(w)
             except: pass
 
+def _docx_energy_stripe_cell(cell, label: str, font_color: str, png_bytes: bytes, cell_width_cm: float, cell_height_cm: float = 0.65) -> None:
+    """Inserta PNG de franjas como fondo (behindDoc=1) con texto encima en una celda Word."""
+    from lxml import etree as _etree
+    from docx.oxml import OxmlElement as _OE
+    from docx.oxml.ns import qn as _qn
+    from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+
+    if not png_bytes:
+        _docx_write_cell(cell, label, bold=True, size=5.8, color=font_color, fill="D9D9D9")
+        return
+
+    cell.text = ""
+    tc_pr = cell._tc.get_or_add_tcPr()
+    tc_b = tc_pr.first_child_found_in("w:tcBorders")
+    if tc_b is None:
+        tc_b = _OE("w:tcBorders"); tc_pr.append(tc_b)
+    for edge in ("top", "left", "bottom", "right"):
+        s = _OE(f"w:{edge}")
+        s.set(_qn("w:val"), "single"); s.set(_qn("w:sz"), "6")
+        s.set(_qn("w:space"), "0"); s.set(_qn("w:color"), "111827")
+        tc_b.append(s)
+    tc_m = tc_pr.first_child_found_in("w:tcMar")
+    if tc_m is None:
+        tc_m = _OE("w:tcMar"); tc_pr.append(tc_m)
+    for m in ("top", "start", "bottom", "end"):
+        n = _OE(f"w:{m}"); n.set(_qn("w:w"), "0"); n.set(_qn("w:type"), "dxa")
+        tc_m.append(n)
+    cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
+
+    rId, _ = cell.part.get_or_add_image(io.BytesIO(png_bytes))
+    cx = int(cell_width_cm  * 914400 / 2.54)
+    cy = int(cell_height_cm * 914400 / 2.54)
+
+    anchor_xml = (
+        f'<w:drawing xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"'
+        f' xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"'
+        f' xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"'
+        f' xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"'
+        f' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+        f'<wp:anchor behindDoc="1" distT="0" distB="0" distL="0" distR="0"'
+        f' simplePos="0" locked="1" layoutInCell="1" allowOverlap="0" relativeHeight="1">'
+        f'<wp:simplePos x="0" y="0"/>'
+        f'<wp:positionH relativeFrom="column"><wp:posOffset>0</wp:posOffset></wp:positionH>'
+        f'<wp:positionV relativeFrom="paragraph"><wp:posOffset>-82400</wp:posOffset></wp:positionV>'
+        f'<wp:extent cx="{cx}" cy="{cy}"/>'
+        f'<wp:effectExtent l="0" t="0" r="0" b="0"/>'
+        f'<wp:wrapNone/>'
+        f'<wp:docPr id="11" name="enbg"/>'
+        f'<wp:cNvGraphicFramePr/>'
+        f'<a:graphic>'
+        f'<a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">'
+        f'<pic:pic>'
+        f'<pic:nvPicPr><pic:cNvPr id="11" name="enbg"/><pic:cNvPicPr/></pic:nvPicPr>'
+        f'<pic:blipFill><a:blip r:embed="{rId}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>'
+        f'<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="{cx}" cy="{cy}"/></a:xfrm>'
+        f'<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr>'
+        f'</pic:pic></a:graphicData></a:graphic></wp:anchor></w:drawing>'
+    )
+
+    para = cell.paragraphs[0]
+    para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    para.paragraph_format.space_before = 0
+    para.paragraph_format.space_after = 0
+
+    drawing_el = _etree.fromstring(anchor_xml.encode())
+    r0 = _OE("w:r"); r0.append(drawing_el); para._p.append(r0)
+
+    r1 = _OE("w:r")
+    rPr = _OE("w:rPr")
+    fc = font_color.replace("#", "").upper()
+    for tag, attrs in [
+        ("w:b", {}),
+        ("w:rFonts", {_qn("w:ascii"): "Bahnschrift", _qn("w:hAnsi"): "Bahnschrift"}),
+        ("w:sz",   {_qn("w:val"): "12"}),
+        ("w:szCs", {_qn("w:val"): "12"}),
+        ("w:color", {_qn("w:val"): fc}),
+    ]:
+        e = _OE(tag)
+        for k, v in attrs.items(): e.set(k, v)
+        rPr.append(e)
+    r1.append(rPr)
+    t_el = _OE("w:t"); t_el.text = label; r1.append(t_el)
+    para._p.append(r1)
+
+
 def html_to_word_bytes(
     ctx, lockpoints, *, codigo, revision, fecha, organizacion,
     logo_uri="", lsr_uri="", personal_afectado, personal_autorizado,
